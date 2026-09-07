@@ -161,6 +161,13 @@ Two things catch people out:
 
 Do not report security issues in a public issue; see [SECURITY.md](SECURITY.md).
 
+## Support
+
+Mac App Lock is free and open source. If it is useful to you, you can support the
+work behind it:
+
+[![Buy me a token](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20token&emoji=&slug=prakash.acharya&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/prakash.acharya)
+
 ## Credits
 
 Originally written by **Parbat Chauhan**, and published here with their
