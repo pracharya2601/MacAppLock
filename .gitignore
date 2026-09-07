@@ -1,0 +1,18 @@
+# Build output
+/.build/
+/dist/
+/DerivedData/
+
+# Generated from project.yml -- run `xcodegen generate`
+/MacAppLock.xcodeproj/
+
+# Generated from scripts/make-icon.m via scripts/make-icon.sh.
+# AppIcon.icns itself IS checked in so builds need no extra tooling.
+/.build/AppIcon.iconset/
+
+# macOS
+.DS_Store
+
+# Xcode user state, if the generated project is opened
+xcuserdata/
+*.xcworkspace/xcuserdata/

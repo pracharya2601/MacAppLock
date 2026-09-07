@@ -1,0 +1,98 @@
+# Xcode project definition. Regenerate MacAppLock.xcodeproj with:
+#
+#     xcodegen generate
+#
+# The generated project is disposable; this file is the source of truth. It is
+# kept deliberately in step with scripts/build-app.sh, which produces the same
+# bundle layout without Xcode.
+
+name: MacAppLock
+
+options:
+  bundleIdPrefix: com.prakashacharya
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    # Warnings are not suppressed anywhere: the build must stay clean, including
+    # deprecation warnings.
+    CLANG_ENABLE_OBJC_ARC: true
+    CLANG_ENABLE_MODULES: true
+    GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: true
+    WARNING_CFLAGS: [-Wall, -Wextra]
+    DEVELOPMENT_TEAM: 9D7ZAKGZ47
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: true
+    DEAD_CODE_STRIPPING: true
+    RUN_CLANG_STATIC_ANALYZER: true
+    CLANG_ANALYZER_NONNULL: true
+
+targets:
+  MacAppLock:
+    type: application
+    platform: macOS
+
+    settings:
+      base:
+        # PRODUCT_NAME drives both the bundle name and the executable name.
+        # Overriding FULL_PRODUCT_NAME to split them does not work: the setting is
+        # honoured in build settings but ignored by the build system, so the
+        # product lands at MacAppLock.app while scripts look for Mac App Lock.app.
+        PRODUCT_NAME: Mac App Lock
+        PRODUCT_BUNDLE_IDENTIFIER: com.prakashacharya.MacAppLock
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CODE_SIGN_ENTITLEMENTS: Resources/MacAppLock.entitlements
+        SKIP_INSTALL: false
+      configs:
+        Release:
+          GCC_OPTIMIZATION_LEVEL: s
+
+    sources:
+      - path: Sources
+        excludes: ["**/*.h"]
+      - path: Sources
+        buildPhase: none
+      # Installed into the bundle so SMAppService can register it as a login agent.
+      - path: Resources/com.prakashacharya.MacAppLock.agent.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchAgents
+      # Referenced by CFBundleIconFile in Info.plist.
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Resources/Info.plist
+        buildPhase: none
+      - path: Resources/MacAppLock.entitlements
+        buildPhase: none
+
+    dependencies:
+      - sdk: AppKit.framework
+      - sdk: Foundation.framework
+      - sdk: LocalAuthentication.framework
+      - sdk: Security.framework
+      - sdk: ServiceManagement.framework
+      - sdk: UniformTypeIdentifiers.framework
+
+schemes:
+  MacAppLock:
+    build:
+      targets:
+        MacAppLock: all
+      postActions:
+        # Verification must run after code signing. Xcode signs once every build
+        # phase has finished, so a script build phase only sees an unsigned
+        # binary, and an unsigned arm64 binary is SIGKILLed the moment it runs.
+        - name: Verify signed bundle
+          settingsTarget: MacAppLock
+          script: |
+            "$SRCROOT/scripts/verify-app.sh" \
+                "$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
+    run:
+      config: Debug
+    archive:
+      config: Release

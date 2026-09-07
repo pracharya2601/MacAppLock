@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No Developer ID identity on a runner, so build-app.sh falls back to an
+      # ad-hoc signature. That is enough to prove the build and the self-tests.
+      - name: Build (command line path)
+        run: ./scripts/build-app.sh
+
+      - name: Verify bundle
+        run: ./scripts/verify-app.sh "dist/Mac App Lock.app"
+
+      - name: Regression self-tests
+        run: |
+          "dist/Mac App Lock.app/Contents/MacOS/Mac App Lock" --self-test
+          "dist/Mac App Lock.app/Contents/MacOS/Mac App Lock" --keychain-self-test
+
+      - name: Static analyzer (must stay clean)
+        run: |
+          sdk=$(xcrun --sdk macosx --show-sdk-path)
+          findings=0
+          for f in Sources/*.m; do
+            out=$(xcrun clang --analyze -fobjc-arc -fblocks -Wall -Wextra \
+              -mmacosx-version-min=13.0 -isysroot "$sdk" -I Sources \
+              -Xclang -analyzer-checker=core,security,unix,osx,deadcode,nullability \
+              "$f" 2>&1 | grep "warning:" | grep -v insecureAPI || true)
+            if [ -n "$out" ]; then echo "$out"; findings=1; fi
+          done
+          rm -f ./*.plist
+          exit $findings
+
+      - name: Build (Xcode path)
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          # A runner has no Developer ID and no provisioning profile, so sign
+          # ad-hoc and drop the entitlements. CODE_SIGNING_ALLOWED=NO would leave
+          # the binary unsigned, and an unsigned arm64 binary cannot launch; the
+          # keychain-access-groups entitlement without a profile is worse still,
+          # because AMFI kills the process on launch.
+          xcodebuild -project MacAppLock.xcodeproj -scheme MacAppLock \
+            -configuration Release -derivedDataPath /tmp/dd \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= \
+            DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build
