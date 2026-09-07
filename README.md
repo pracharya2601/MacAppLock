@@ -1,5 +1,9 @@
 # Mac App Lock
 
+[![CI](https://github.com/pracharya2601/MacAppLock/actions/workflows/ci.yml/badge.svg)](https://github.com/pracharya2601/MacAppLock/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey.svg)
+
 Lock individual macOS applications behind Touch ID or a recovery PIN.
 
 Mac App Lock runs from the menu bar. When an application you have protected comes
