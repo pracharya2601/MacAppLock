@@ -28,7 +28,16 @@ xcodebuild -project MacAppLock.xcodeproj -scheme MacAppLock -configuration Relea
 ./scripts/build-app.sh /tmp/stage      # optional output root
 
 ./scripts/verify-app.sh "dist/Mac App Lock.app"   # post-signing checks
+./scripts/package-release.sh "<app>"             # → dist/MacAppLock-<version>.zip
 ```
+
+`package-release.sh` exists because a `.app` is a directory: GitHub's release
+uploader cannot take one, and `zip -r` does not reliably preserve symlinks,
+extended attributes or the signature. It uses `ditto -c -k --keepParent`, refuses
+anything unsigned or unstapled, and round-trips the archive to prove the ticket
+survived. The notarized bundle lives in the archive's
+`Submissions/<uuid>/` directory, **not** `Products/Applications/`, which holds the
+unstapled pre-distribution copy.
 
 `MacAppLock.xcodeproj` is **generated and disposable** — never hand-edit it. `project.yml` is the
 source of truth; regenerate after changing it. Xcode builds are universal (x86_64 + arm64);
@@ -56,6 +65,11 @@ open "dist/Mac App Lock.app"
 
 Three of these cost real debugging time; do not re-litigate them:
 
+- **`grep -q` in a pipeline under `set -o pipefail` reports failure.** grep exits on
+  the first match, the upstream command dies of SIGPIPE (141), and the pipeline reads as
+  "not found". Capture into a variable and match with `[[ $var == *needle* ]]`. This bit
+  both `verify-app.sh` and `package-release.sh`. Relatedly, `codesign -dv` only prints
+  `Authority=` lines at `--verbose=2` or higher.
 - **Verification cannot be a build phase.** Xcode signs *after* every build phase completes, so a
   script phase only ever sees an unsigned binary — and an unsigned arm64 binary is SIGKILLed
   (exit 137) the moment it runs. That is why `scripts/verify-app.sh` is a **scheme post-action**,

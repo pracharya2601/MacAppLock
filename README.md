@@ -120,6 +120,19 @@ signature, which is fine for local use.
 Optional environment: `SIGN_IDENTITY`, `PROVISIONING_PROFILE`, and `NOTARIZE=1`
 with `NOTARY_PROFILE` (see `scripts/build-app.sh`).
 
+### Packaging a release
+
+A `.app` is a directory, so it cannot be attached to a GitHub release directly —
+the uploader would take the files inside it instead. Archive it first:
+
+```sh
+./scripts/package-release.sh "path/to/Mac App Lock.app"   # → dist/MacAppLock-<version>.zip
+```
+
+The script refuses to package anything that is not Developer ID signed, notarized
+and stapled, then unpacks the archive again to confirm the signature and ticket
+survived. Use the app from **Distribute App → Developer ID**, not a local build.
+
 ### Tests and artwork
 
 ```sh
